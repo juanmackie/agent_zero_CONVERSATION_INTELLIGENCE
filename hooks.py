@@ -33,10 +33,10 @@ def uninstall():
     Cleans up kvp storage.
     """
     # Remove all conversation intelligence data
-    kvp.delete_persistent(_FIRST_RUN_KEY)
-    kvp.delete_persistent(_LAST_PROCESSED_KEY)
-    kvp.delete_persistent("conversation_context_graph")
-    kvp.delete_persistent("conversation_thread_index")
+    kvp.remove_persistent(_FIRST_RUN_KEY)
+    kvp.remove_persistent(_LAST_PROCESSED_KEY)
+    kvp.remove_persistent("conversation_context_graph")
+    kvp.remove_persistent("conversation_thread_index")
     
     return True
 
