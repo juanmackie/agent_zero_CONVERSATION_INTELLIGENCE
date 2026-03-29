@@ -1,5 +1,5 @@
 name: conversation_intelligence
-version: 1.0.4
+version: 1.0.5
 description: Proactive context intelligence for Agent Zero. Background analysis every hour, auto-detects conversation threads, silently injects relevant context into agent awareness.
 author: juanm
 license: MIT
@@ -27,8 +27,8 @@ prompts:
 # Extensions (use Agent Zero's extension system)
 extensions:
   python:
-    job_loop:
-      - extensions/python/job_loop/_50_context_analysis.py
+    monologue_start:
+      - extensions/python/monologue_start/_50_context_analysis.py
     system_prompt:
       - extensions/python/system_prompt/_20_conversation_context.py
 
