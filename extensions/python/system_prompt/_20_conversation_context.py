@@ -5,7 +5,7 @@ Zero prompt hacking, uses official extension point.
 """
 
 from helpers.extension import Extension
-from plugins.conversation_intelligence.helpers.context_store import ContextStore
+from usr.plugins.conversation_intelligence.helpers.context_store import ContextStore
 
 
 class ConversationContextPrompt(Extension):

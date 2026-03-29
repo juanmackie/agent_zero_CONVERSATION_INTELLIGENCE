@@ -9,9 +9,9 @@ import time
 from datetime import datetime, timedelta
 from helpers.extension import Extension
 from helpers.task_scheduler import TaskScheduler, TaskType
-from plugins.conversation_intelligence.helpers.context_extractor import ContextExtractor
-from plugins.conversation_intelligence.helpers.context_store import ContextStore
-from plugins.conversation_intelligence.helpers.thread_detector import ThreadDetector
+from usr.plugins.conversation_intelligence.helpers.context_extractor import ContextExtractor
+from usr.plugins.conversation_intelligence.helpers.context_store import ContextStore
+from usr.plugins.conversation_intelligence.helpers.thread_detector import ThreadDetector
 from plugins._memory.helpers.memory import Memory
 
 
