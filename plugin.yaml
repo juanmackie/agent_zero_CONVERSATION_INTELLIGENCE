@@ -13,10 +13,10 @@ min_agent_zero_version: "1.3.0"
 
 # Plugin structure
 helpers:
-  - a0/helpers/conversation_search.py
-  - a0/helpers/context_extractor.py
-  - a0/helpers/context_store.py
-  - a0/helpers/thread_detector.py
+  - helpers/conversation_search.py
+  - helpers/context_extractor.py
+  - helpers/context_store.py
+  - helpers/thread_detector.py
 
 tools:
   - tools/conversation_search.py

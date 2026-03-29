@@ -9,9 +9,9 @@ import time
 from datetime import datetime, timedelta
 from helpers.extension import Extension
 from helpers.task_scheduler import TaskScheduler, TaskType
-from a0.helpers.context_extractor import ContextExtractor
-from a0.helpers.context_store import ContextStore
-from a0.helpers.thread_detector import ThreadDetector
+from helpers.context_extractor import ContextExtractor
+from helpers.context_store import ContextStore
+from helpers.thread_detector import ThreadDetector
 from plugins._memory.helpers.memory import Memory
 
 
