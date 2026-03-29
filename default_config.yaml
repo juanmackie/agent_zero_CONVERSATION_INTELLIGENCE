@@ -1,0 +1,18 @@
+conversation_intelligence:
+  # Enable conversation search enhancements
+  enabled: true
+  
+  # Date format for filtering (YYYY-MM-DD)
+  date_format: "%Y-%m-%d"
+  
+  # Default threshold for semantic similarity (0.0 - 1.0)
+  default_threshold: 0.7
+  
+  # Default result limit
+  default_limit: 10
+  
+  # Thread ID field name in metadata
+  thread_id_field: "thread_id"
+  
+  # Auto-detect and use existing memory system (no duplication)
+  auto_detect_memory: true
