@@ -31,7 +31,7 @@ class ContextAnalysisJob(Extension):
     RUN_TIMEOUT = 300
     
     def __init__(self, agent=None, **kwargs):
-        super().__init__()
+        super().__init__(agent=agent)
         self.agent = agent
         self.last_run_time = 0
         self.is_running = False
