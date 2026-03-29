@@ -99,6 +99,7 @@ class ContextAnalysisJob(Extension):
 
         ContextExtractor = _load_helper_module("context_extractor").ContextExtractor
         ContextStore = _load_helper_module("context_store").ContextStore
+        fetch_memory_documents = _load_helper_module("memory_documents").fetch_memory_documents
         ThreadDetector = _load_helper_module("thread_detector").ThreadDetector
         
         # Get last processed timestamp
@@ -112,35 +113,26 @@ class ContextAnalysisJob(Extension):
         
         # Fetch conversations since last processed time
         if full_scan:
-            all_docs = await db.search_similarity_threshold(
-                query="",
-                limit=10000,
-                threshold=0.0,
-                filter=""
-            )
+            all_docs = await fetch_memory_documents(db, limit=10000)
         elif last_processed:
             # Calculate cutoff time
             last_dt = datetime.fromtimestamp(last_processed)
             cutoff = last_dt.strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Search for conversations after cutoff
-            # Note: We use an empty query to get all, then filter by time
-            all_docs = await db.search_similarity_threshold(
-                query="",
+
+            all_docs = await fetch_memory_documents(
+                db,
                 limit=self.MAX_BATCH_SIZE,
-                threshold=0.0,
-                filter=f"timestamp >= '{cutoff}'"
+                since=cutoff,
             )
         else:
             # No previous processing - get recent conversations
             one_hour_ago = datetime.now() - timedelta(hours=1)
             cutoff = one_hour_ago.strftime("%Y-%m-%d %H:%M:%S")
-            
-            all_docs = await db.search_similarity_threshold(
-                query="",
+
+            all_docs = await fetch_memory_documents(
+                db,
                 limit=self.MAX_BATCH_SIZE,
-                threshold=0.0,
-                filter=f"timestamp >= '{cutoff}'"
+                since=cutoff,
             )
         
         if not all_docs:

@@ -7,6 +7,22 @@ import json
 from typing import Dict, Any, Optional
 
 
+def _normalize_document(doc: Any) -> tuple[str, Dict[str, Any]]:
+    if hasattr(doc, "page_content"):
+        content = getattr(doc, "page_content", "") or ""
+        metadata = getattr(doc, "metadata", {}) or {}
+        return content, metadata
+
+    if isinstance(doc, dict):
+        metadata = doc.get("metadata") or {}
+        content = doc.get("content")
+        if content is None:
+            content = doc.get("page_content", "")
+        return content or "", metadata
+
+    return "", {}
+
+
 class ContextExtractor:
     """
     Extracts entities, topics, and context from conversations.
@@ -88,9 +104,8 @@ Conversation to analyze:
         """
         if not doc:
             return None
-        
-        content = doc.get("content", "")
-        metadata = doc.get("metadata", {})
+
+        content, metadata = _normalize_document(doc)
         
         if not content:
             return None

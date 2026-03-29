@@ -63,6 +63,7 @@ async def _process_all_history(agent):
     try:
         ContextStore = _load_helper_module("context_store").ContextStore
         ContextExtractor = _load_helper_module("context_extractor").ContextExtractor
+        fetch_memory_documents = _load_helper_module("memory_documents").fetch_memory_documents
         ThreadDetector = _load_helper_module("thread_detector").ThreadDetector
         from plugins._memory.helpers.memory import Memory
         
@@ -71,13 +72,7 @@ async def _process_all_history(agent):
         
         # Get all memories
         db = await Memory.get(agent)
-        # Search with empty query to get all documents
-        all_docs = await db.search_similarity_threshold(
-            query="",
-            limit=10000,  # High limit to get all
-            threshold=0.0,
-            filter=""
-        )
+        all_docs = await fetch_memory_documents(db, limit=10000)
         
         if not all_docs:
             # No existing conversations

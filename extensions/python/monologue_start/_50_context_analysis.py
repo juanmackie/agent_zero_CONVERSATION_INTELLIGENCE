@@ -69,28 +69,23 @@ class ContextAnalysisOnUse(Extension):
     async def _run_analysis(self, full_scan: bool = False):
         ContextExtractor = _load_helper_module("context_extractor").ContextExtractor
         ContextStore = _load_helper_module("context_store").ContextStore
+        fetch_memory_documents = _load_helper_module("memory_documents").fetch_memory_documents
         ThreadDetector = _load_helper_module("thread_detector").ThreadDetector
 
         db = await Memory.get(self.agent)
 
         if full_scan:
-            all_docs = await db.search_similarity_threshold(
-                query="",
-                limit=10000,
-                threshold=0.0,
-                filter="",
-            )
+            all_docs = await fetch_memory_documents(db, limit=10000)
         else:
             last_processed = ContextStore.get_last_processed_timestamp()
             if last_processed:
                 cutoff = datetime.fromtimestamp(last_processed).strftime("%Y-%m-%d %H:%M:%S")
             else:
                 cutoff = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
-            all_docs = await db.search_similarity_threshold(
-                query="",
+            all_docs = await fetch_memory_documents(
+                db,
                 limit=self.MAX_BATCH_SIZE,
-                threshold=0.0,
-                filter=f"timestamp >= '{cutoff}'",
+                since=cutoff,
             )
 
         if not all_docs:
