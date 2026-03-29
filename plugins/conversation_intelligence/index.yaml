@@ -1,9 +1,11 @@
 title: Conversation Intelligence
-description: Date-range and thread-based conversation search. Extends memory_load with date_from, date_to, and thread_id filters. Zero new dependencies, backward compatible.
-github: https://github.com/juanm/agent-zero-conversation-intelligence
+description: Proactive context intelligence with date-range search and auto-detecting conversation threads. Background analysis every hour, zero new infrastructure.
+github: https://github.com/juanmackie/agent_zero_CONVERSATION_INTELLIGENCE
 tags:
   - memory
   - search
   - conversation
-  - date-filter
-  - thread-tracking
+  - context
+  - background-processing
+screenshots:
+  - https://raw.githubusercontent.com/juanmackie/agent_zero_CONVERSATION_INTELLIGENCE/main/docs/status-modal.png
