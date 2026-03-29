@@ -4,15 +4,26 @@ Uses Agent Zero's existing plugin system - zero custom infrastructure.
 """
 
 import asyncio
+from functools import lru_cache
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
+
 from helpers import kvp
-try:
-    from usr.plugins.conversation_intelligence.helpers.context_store import ContextStore
-except ModuleNotFoundError:
-    from plugins.conversation_intelligence.helpers.context_store import ContextStore
 
 # Track initialization state
 _FIRST_RUN_KEY = "conversation_intelligence_first_run_complete"
 _LAST_PROCESSED_KEY = "conversation_intelligence_last_processed_timestamp"
+
+
+@lru_cache(maxsize=None)
+def _load_helper_module(module_name: str):
+    helper_path = Path(__file__).resolve().parent / "helpers" / f"{module_name}.py"
+    spec = spec_from_file_location(f"conversation_intelligence_{module_name}", helper_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load helper module: {module_name}")
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def initialize_plugin(agent=None):
@@ -50,12 +61,9 @@ async def _process_all_history(agent):
     Runs in background, takes 1-5 minutes.
     """
     try:
-        try:
-            from usr.plugins.conversation_intelligence.helpers.context_extractor import ContextExtractor
-            from usr.plugins.conversation_intelligence.helpers.thread_detector import ThreadDetector
-        except ModuleNotFoundError:
-            from plugins.conversation_intelligence.helpers.context_extractor import ContextExtractor
-            from plugins.conversation_intelligence.helpers.thread_detector import ThreadDetector
+        ContextStore = _load_helper_module("context_store").ContextStore
+        ContextExtractor = _load_helper_module("context_extractor").ContextExtractor
+        ThreadDetector = _load_helper_module("thread_detector").ThreadDetector
         from plugins._memory.helpers.memory import Memory
         
         if agent is None or Memory is None:

@@ -4,11 +4,22 @@ Silently injects recent conversation context into agent's awareness.
 Zero prompt hacking, uses official extension point.
 """
 
+from functools import lru_cache
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
+
 from helpers.extension import Extension
-try:
-    from usr.plugins.conversation_intelligence.helpers.context_store import ContextStore
-except ModuleNotFoundError:
-    from plugins.conversation_intelligence.helpers.context_store import ContextStore
+
+
+@lru_cache(maxsize=None)
+def _load_helper_module(module_name: str):
+    helper_path = Path(__file__).resolve().parents[3] / "helpers" / f"{module_name}.py"
+    spec = spec_from_file_location(f"conversation_intelligence_{module_name}", helper_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load helper module: {module_name}")
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class ConversationContextPrompt(Extension):
@@ -32,6 +43,7 @@ class ConversationContextPrompt(Extension):
             system_prompt: List of prompt strings (mutable)
         """
         try:
+            ContextStore = _load_helper_module("context_store").ContextStore
             # Get top active threads
             top_threads = ContextStore.get_top_threads(self.MAX_THREADS)
             

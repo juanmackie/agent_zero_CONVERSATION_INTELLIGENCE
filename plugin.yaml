@@ -1,5 +1,5 @@
 name: conversation_intelligence
-version: 1.0.3
+version: 1.0.4
 description: Proactive context intelligence for Agent Zero. Background analysis every hour, auto-detects conversation threads, silently injects relevant context into agent awareness.
 author: juanm
 license: MIT

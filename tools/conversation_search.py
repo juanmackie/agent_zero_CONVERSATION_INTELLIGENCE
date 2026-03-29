@@ -3,11 +3,22 @@ Conversation Search Tool - Agent Zero Tool Implementation
 Extends memory_load with date-range and thread filtering.
 """
 
+from functools import lru_cache
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
+
 from helpers.tool import Tool, Response
-try:
-    from usr.plugins.conversation_intelligence.helpers.conversation_search import ConversationSearch
-except ModuleNotFoundError:
-    from plugins.conversation_intelligence.helpers.conversation_search import ConversationSearch
+
+
+@lru_cache(maxsize=None)
+def _load_helper_module(module_name: str):
+    helper_path = Path(__file__).resolve().parents[1] / "helpers" / f"{module_name}.py"
+    spec = spec_from_file_location(f"conversation_intelligence_{module_name}", helper_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load helper module: {module_name}")
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 DEFAULT_THRESHOLD = 0.7
 DEFAULT_LIMIT = 10
@@ -41,6 +52,7 @@ class ConversationSearchTool(Tool):
             limit: Maximum results
         """
         try:
+            ConversationSearch = _load_helper_module("conversation_search").ConversationSearch
             # Convert empty strings to None
             date_from = date_from if date_from else None
             date_to = date_to if date_to else None

@@ -7,18 +7,25 @@ Zero new scheduling systems.
 import asyncio
 import time
 from datetime import datetime, timedelta
+from functools import lru_cache
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
+
 from helpers import kvp
 from helpers.extension import Extension
 from helpers.task_scheduler import TaskScheduler, TaskType
-try:
-    from usr.plugins.conversation_intelligence.helpers.context_extractor import ContextExtractor
-    from usr.plugins.conversation_intelligence.helpers.context_store import ContextStore
-    from usr.plugins.conversation_intelligence.helpers.thread_detector import ThreadDetector
-except ModuleNotFoundError:
-    from plugins.conversation_intelligence.helpers.context_extractor import ContextExtractor
-    from plugins.conversation_intelligence.helpers.context_store import ContextStore
-    from plugins.conversation_intelligence.helpers.thread_detector import ThreadDetector
 from plugins._memory.helpers.memory import Memory
+
+
+@lru_cache(maxsize=None)
+def _load_helper_module(module_name: str):
+    helper_path = Path(__file__).resolve().parents[3] / "helpers" / f"{module_name}.py"
+    spec = spec_from_file_location(f"conversation_intelligence_{module_name}", helper_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load helper module: {module_name}")
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class ContextAnalysisJob(Extension):
@@ -47,6 +54,8 @@ class ContextAnalysisJob(Extension):
             self.last_run_time = 0
         if not hasattr(self, "is_running"):
             self.is_running = False
+
+        ContextStore = _load_helper_module("context_store").ContextStore
 
         current_time = time.time()
         first_run_complete = kvp.get_persistent(self.FIRST_RUN_KEY, default=False)
@@ -87,6 +96,10 @@ class ContextAnalysisJob(Extension):
         """
         if not self.agent:
             return
+
+        ContextExtractor = _load_helper_module("context_extractor").ContextExtractor
+        ContextStore = _load_helper_module("context_store").ContextStore
+        ThreadDetector = _load_helper_module("thread_detector").ThreadDetector
         
         # Get last processed timestamp
         last_processed = ContextStore.get_last_processed_timestamp()
