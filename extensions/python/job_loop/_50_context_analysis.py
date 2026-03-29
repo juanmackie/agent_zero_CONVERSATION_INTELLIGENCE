@@ -30,17 +30,16 @@ class ContextAnalysisJob(Extension):
     # Timeout for each run (5 minutes)
     RUN_TIMEOUT = 300
     
-    def __init__(self, agent=None, **kwargs):
-        super().__init__(agent=agent)
-        self.agent = agent
-        self.last_run_time = 0
-        self.is_running = False
-    
     async def execute(self, **kwargs):
         """
         Called every 60 seconds by job_loop.
         Checks if it's time to run hourly analysis.
         """
+        if not hasattr(self, "last_run_time"):
+            self.last_run_time = 0
+        if not hasattr(self, "is_running"):
+            self.is_running = False
+
         current_time = time.time()
         
         # Check if enough time has passed since last run
