@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation Intelligence - Status</title>
+    <style>
+        /* Agent Zero modal styles */
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-color, #f5f5f5);
+            color: var(--text-color, #333);
+        }
+        
+        .header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color, #ddd);
+        }
+        
+        .header h1 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header .subtitle {
+            color: var(--text-muted, #666);
+            font-size: 14px;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .status-card {
+            background: var(--card-bg, white);
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .status-card .label {
+            font-size: 12px;
+            color: var(--text-muted, #666);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .status-card .value {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-color, #333);
+        }
+        
+        .status-card .subvalue {
+            font-size: 12px;
+            color: var(--text-muted, #666);
+            margin-top: 4px;
+        }
+        
+        .section {
+            background: var(--card-bg, white);
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section h2 .icon {
+            font-size: 20px;
+        }
+        
+        .thread-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .thread-table th,
+        .thread-table td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color, #ddd);
+        }
+        
+        .thread-table th {
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted, #666);
+            background: var(--bg-color, #f5f5f5);
+        }
+        
+        .thread-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .thread-table tr:hover {
+            background: var(--hover-bg, #f9f9f9);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted, #666);
+        }
+        
+        .loading .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color, #eee);
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            color: var(--text-muted, #666);
+        }
+        
+        .info-value {
+            font-weight: 500;
+        }
+        
+        .refresh-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: #2980b9;
+        }
+        
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted, #666);
+        }
+        
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div x-data="statusApp()">
+        <!-- Header -->
+        <div class="header">
+            <h1>Conversation Intelligence</h1>
+            <div class="subtitle">
+                Proactive context awareness for Agent Zero
+                <span x-show="status">• v1.0.0</span>
+            </div>
+        </div>
+        
+        <!-- Loading State -->
+        <div x-show="loading" class="loading">
+            <div class="spinner"></div>
+            <div>Loading plugin status...</div>
+        </div>
+        
+        <!-- Error State -->
+        <div x-show="error" x-cloak class="error">
+            <strong>Error:</strong> <span x-text="error"></span>
+        </div>
+        
+        <!-- Main Content -->
+        <div x-show="!loading && !error && status" x-cloak>
+            <!-- Status Overview Cards -->
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="label">First Run</div>
+                    <div class="value">
+                        <span x-show="status.first_run_complete" class="badge badge-success">✓ Complete</span>
+                        <span x-show="!status.first_run_complete" class="badge badge-warning">⏳ Processing</span>
+                    </div>
+                    <div class="subvalue" x-show="status.last_processed_human" x-text="'Last: ' + status.last_processed_human"></div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="label">Conversations</div>
+                    <div class="value" x-text="status.conversations_analyzed"></div>
+                    <div class="subvalue">Total analyzed</div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="label">Threads</div>
+                    <div class="value" x-text="status.thread_count"></div>
+                    <div class="subvalue">Auto-detected</div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="label">Storage</div>
+                    <div class="value" x-text="status.storage.context_graph_size_kb + ' KB'"></div>
+                    <div class="subvalue">Context graph size</div>
+                </div>
+            </div>
+            
+            <!-- Threads Section -->
+            <div class="section">
+                <h2><span class="icon">🧵</span> Active Threads <span x-show="status.threads.length > 0" x-text="'(' + status.threads.length + ')'"></span></h2>
+                
+                <div x-show="status.threads.length === 0" class="empty-state">
+                    <div class="icon">📝</div>
+                    <div>No threads detected yet.</div>
+                    <div style="font-size: 12px; margin-top: 8px;">
+                        Threads are automatically created as you have conversations.
+                    </div>
+                </div>
+                
+                <table x-show="status.threads.length > 0" class="thread-table">
+                    <thead>
+                        <tr>
+                            <th>Thread Name</th>
+                            <th>Conversations</th>
+                            <th>Last Activity</th>
+                            <th>Key Entities</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="thread in status.threads" :key="thread.id">
+                            <tr>
+                                <td>
+                                    <strong x-text="thread.id"></strong>
+                                </td>
+                                <td x-text="thread.conversation_count"></td>
+                                <td x-text="thread.last_activity_human"></td>
+                                <td>
+                                    <span x-show="thread.entities.length === 0" style="color: #999;">-</span>
+                                    <template x-for="entity in thread.entities" :key="entity">
+                                        <span class="badge" style="margin-right: 4px;" x-text="entity"></span>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Recent Activity Section -->
+            <div class="section">
+                <h2><span class="icon">📈</span> Recent Activity</h2>
+                <div class="info-row">
+                    <span class="info-label">Last Analysis</span>
+                    <span class="info-value" x-text="status.recent_activity.last_analysis || 'Never'"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Conversations Processed (24h)</span>
+                    <span class="info-value" x-text="status.recent_activity.conversations_processed"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Processing Schedule</span>
+                    <span class="info-value">Every hour</span>
+                </div>
+            </div>
+            
+            <!-- Storage Section -->
+            <div class="section">
+                <h2><span class="icon">💾</span> Storage Details</h2>
+                <div class="info-row">
+                    <span class="info-label">Context Graph</span>
+                    <span class="info-value">usr/kvp/conversation_context_graph.json</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Graph Size</span>
+                    <span class="info-value" x-text="status.storage.context_graph_size_kb + ' KB'"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Memory Files (FAISS)</span>
+                    <span class="info-value" x-text="status.storage.memory_files + ' files'"></span>
+                </div>
+                <div class="info-row" x-show="status.storage.memory_size_mb > 0">
+                    <span class="info-label">Memory Storage</span>
+                    <span class="info-value" x-text="status.storage.memory_size_mb + ' MB'"></span>
+                </div>
+            </div>
+            
+            <!-- Refresh Button -->
+            <div style="text-align: center; margin-top: 24px;">
+                <button class="refresh-btn" @click="refresh()" :disabled="loading">
+                    <span>🔄</span>
+                    <span x-text="loading ? 'Loading...' : 'Refresh Status'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function statusApp() {
+            return {
+                loading: true,
+                error: null,
+                status: null,
+                
+                async init() {
+                    await this.loadStatus();
+                },
+                
+                async loadStatus() {
+                    this.loading = true;
+                    this.error = null;
+                    
+                    try {
+                        const response = await fetch('/api/plugins/conversation_intelligence/status_check', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                action: 'get_status'
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        this.status = await response.json();
+                        
+                        if (this.status.error) {
+                            this.error = this.status.error;
+                        }
+                    } catch (e) {
+                        this.error = 'Failed to load status: ' + e.message;
+                        console.error('Status check error:', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                async refresh() {
+                    await this.loadStatus();
+                }
+            };
+        }
+        
+        // Auto-initialize when Alpine is ready
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('statusApp', statusApp);
+        });
+    </script>
+</body>
+</html>
