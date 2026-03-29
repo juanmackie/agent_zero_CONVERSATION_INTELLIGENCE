@@ -20,6 +20,10 @@ class ConversationContextPrompt(Extension):
     # Maximum characters per thread summary
     MAX_SUMMARY_LENGTH = 200
     
+    def __init__(self, agent=None, **kwargs):
+        super().__init__()
+        self.agent = agent
+    
     async def execute(self, system_prompt: list, **kwargs):
         """
         Called when building system prompt.
