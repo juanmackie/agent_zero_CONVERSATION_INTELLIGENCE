@@ -1,12 +1,12 @@
 name: conversation_intelligence
-version: 1.0.0
+version: 1.0.1
 description: Proactive context intelligence for Agent Zero. Background analysis every hour, auto-detects conversation threads, silently injects relevant context into agent awareness.
 author: juanm
 license: MIT
 
 # Plugin metadata for a0-plugins index
-homepage: https://github.com/juanm/agent-zero-conversation-intelligence
-documentation: https://github.com/juanm/agent-zero-conversation-intelligence/blob/main/README.md
+homepage: https://github.com/juanmackie/agent_zero_CONVERSATION_INTELLIGENCE
+documentation: https://github.com/juanmackie/agent_zero_CONVERSATION_INTELLIGENCE/blob/main/README.md
 
 # Agent Zero compatibility
 min_agent_zero_version: "1.3.0"
