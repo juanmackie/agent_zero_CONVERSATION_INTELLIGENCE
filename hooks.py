@@ -5,7 +5,10 @@ Uses Agent Zero's existing plugin system - zero custom infrastructure.
 
 import asyncio
 from helpers import kvp
-from usr.plugins.conversation_intelligence.helpers.context_store import ContextStore
+try:
+    from usr.plugins.conversation_intelligence.helpers.context_store import ContextStore
+except ModuleNotFoundError:
+    from plugins.conversation_intelligence.helpers.context_store import ContextStore
 
 # Track initialization state
 _FIRST_RUN_KEY = "conversation_intelligence_first_run_complete"
@@ -47,8 +50,12 @@ async def _process_all_history(agent):
     Runs in background, takes 1-5 minutes.
     """
     try:
-        from usr.plugins.conversation_intelligence.helpers.context_extractor import ContextExtractor
-        from usr.plugins.conversation_intelligence.helpers.thread_detector import ThreadDetector
+        try:
+            from usr.plugins.conversation_intelligence.helpers.context_extractor import ContextExtractor
+            from usr.plugins.conversation_intelligence.helpers.thread_detector import ThreadDetector
+        except ModuleNotFoundError:
+            from plugins.conversation_intelligence.helpers.context_extractor import ContextExtractor
+            from plugins.conversation_intelligence.helpers.thread_detector import ThreadDetector
         from plugins._memory.helpers.memory import Memory
         
         if agent is None or Memory is None:
