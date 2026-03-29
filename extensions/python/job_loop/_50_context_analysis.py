@@ -7,6 +7,7 @@ Zero new scheduling systems.
 import asyncio
 import time
 from datetime import datetime, timedelta
+from helpers import kvp
 from helpers.extension import Extension
 from helpers.task_scheduler import TaskScheduler, TaskType
 from usr.plugins.conversation_intelligence.helpers.context_extractor import ContextExtractor
@@ -29,6 +30,8 @@ class ContextAnalysisJob(Extension):
     
     # Timeout for each run (5 minutes)
     RUN_TIMEOUT = 300
+
+    FIRST_RUN_KEY = "conversation_intelligence_first_run_complete"
     
     async def execute(self, **kwargs):
         """
@@ -41,9 +44,10 @@ class ContextAnalysisJob(Extension):
             self.is_running = False
 
         current_time = time.time()
-        
+        first_run_complete = kvp.get_persistent(self.FIRST_RUN_KEY, default=False)
+
         # Check if enough time has passed since last run
-        if current_time - self.last_run_time < self.INTERVAL_SECONDS:
+        if first_run_complete and current_time - self.last_run_time < self.INTERVAL_SECONDS:
             return
         
         # Avoid concurrent runs
@@ -60,7 +64,7 @@ class ContextAnalysisJob(Extension):
         self.is_running = True
         try:
             await asyncio.wait_for(
-                self._run_analysis(),
+                self._run_analysis(full_scan=not first_run_complete),
                 timeout=self.RUN_TIMEOUT
             )
             self.last_run_time = current_time
@@ -72,7 +76,7 @@ class ContextAnalysisJob(Extension):
         finally:
             self.is_running = False
     
-    async def _run_analysis(self):
+    async def _run_analysis(self, full_scan: bool = False):
         """
         Main analysis routine - fetches new conversations and extracts context.
         """
@@ -89,7 +93,14 @@ class ContextAnalysisJob(Extension):
             return
         
         # Fetch conversations since last processed time
-        if last_processed:
+        if full_scan:
+            all_docs = await db.search_similarity_threshold(
+                query="",
+                limit=10000,
+                threshold=0.0,
+                filter=""
+            )
+        elif last_processed:
             # Calculate cutoff time
             last_dt = datetime.fromtimestamp(last_processed)
             cutoff = last_dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -115,6 +126,8 @@ class ContextAnalysisJob(Extension):
             )
         
         if not all_docs:
+            if full_scan:
+                kvp.set_persistent(self.FIRST_RUN_KEY, True)
             return
         
         # Extract context from new documents
@@ -127,6 +140,8 @@ class ContextAnalysisJob(Extension):
                 new_contexts.append(context)
         
         if not new_contexts:
+            if full_scan:
+                kvp.set_persistent(self.FIRST_RUN_KEY, True)
             return
         
         # Load existing thread detector state
@@ -143,5 +158,8 @@ class ContextAnalysisJob(Extension):
             "threads": thread_detector.get_all_threads(),
             "processed_count": len(new_contexts)
         })
-        
+
+        if full_scan:
+            kvp.set_persistent(self.FIRST_RUN_KEY, True)
+
         print(f"Context analysis complete: processed {len(new_contexts)} conversations")

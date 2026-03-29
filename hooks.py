@@ -20,7 +20,7 @@ def initialize_plugin(agent=None):
     # Check if we've already done first-run processing
     first_run_complete = kvp.get_persistent(_FIRST_RUN_KEY, default=False)
     
-    if not first_run_complete:
+    if agent is not None and not first_run_complete:
         # Schedule first-run processing (non-blocking)
         asyncio.create_task(_process_all_history(agent))
     
