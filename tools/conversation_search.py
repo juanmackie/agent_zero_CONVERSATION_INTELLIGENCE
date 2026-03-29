@@ -4,7 +4,7 @@ Extends memory_load with date-range and thread filtering.
 """
 
 from helpers.tool import Tool, Response
-from helpers.conversation_search import ConversationSearch
+from plugins.conversation_intelligence.helpers.conversation_search import ConversationSearch
 
 DEFAULT_THRESHOLD = 0.7
 DEFAULT_LIMIT = 10
