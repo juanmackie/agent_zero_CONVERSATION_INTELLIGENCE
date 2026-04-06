@@ -483,7 +483,41 @@
             return {
                 loading: true,
                 error: null,
-                status: null,
+                status: {
+                    installed: false,
+                    first_run_complete: false,
+                    last_processed: null,
+                    last_processed_human: null,
+                    conversations_analyzed: 0,
+                    thread_count: 0,
+                    threads: [],
+                    storage: {
+                        context_graph_size_kb: 0,
+                        memory_files: 0,
+                        memory_size_mb: 0,
+                    },
+                    recent_activity: {
+                        last_analysis: null,
+                        conversations_processed: 0,
+                    },
+                    analysis: {
+                        state: 'idle',
+                        mode: null,
+                        message: 'Idle',
+                        processed_count: 0,
+                        total_count: 0,
+                        progress_percent: 0,
+                        started_at: null,
+                        finished_at: null,
+                        last_error: null,
+                    },
+                    schedule: {
+                        type: 'job_loop',
+                        interval: 'Every hour',
+                        status: 'active',
+                    },
+                    error: null,
+                },
                 pollTimer: null,
                 
                 async init() {

@@ -29,7 +29,8 @@ class StatusCheckHandler(ApiHandler):
         Returns:
             Status data as dict or Response object
         """
-        action = input.get("action", "get_status")
+        payload = input if isinstance(input, dict) else {}
+        action = payload.get("action", "get_status")
         
         if action == "get_status":
             return await self._get_status()
