@@ -7,57 +7,36 @@
     <style>
         /* Agent Zero modal styles - light/dark theme support */
         :root {
-            --ci-bg: #f5f5f5;
-            --ci-text: #333;
-            --ci-text-muted: #666;
-            --ci-card-bg: #fff;
-            --ci-border: #ddd;
-            --ci-hover-bg: #f0f0f0;
-            --ci-badge-success-bg: #d4edda;
-            --ci-badge-success-text: #155724;
-            --ci-badge-warning-bg: #fff3cd;
-            --ci-badge-warning-text: #856404;
-            --ci-badge-error-bg: #f8d7da;
-            --ci-badge-error-text: #721c24;
-            --ci-error-bg: #f8d7da;
-            --ci-error-text: #721c24;
-            --ci-btn-bg: #3498db;
-            --ci-btn-hover: #2980b9;
-            --ci-spinner-border: #f3f3f3;
-            --ci-spinner-top: #3498db;
+            --ci-bg: var(--color-bg-primary, var(--bg-color, #f5f5f5));
+            --ci-text: var(--color-text-primary, var(--text-color, #333));
+            --ci-text-muted: var(--color-text-secondary, var(--text-muted, #666));
+            --ci-card-bg: var(--color-bg-secondary, var(--card-bg, #fff));
+            --ci-border: var(--color-border, var(--border-color, #ddd));
+            --ci-hover-bg: var(--color-bg-tertiary, var(--hover-bg, #f0f0f0));
+            --ci-badge-success-bg: var(--color-success-bg, #d4edda);
+            --ci-badge-success-text: var(--color-success-text, #155724);
+            --ci-badge-warning-bg: var(--color-warning-bg, #fff3cd);
+            --ci-badge-warning-text: var(--color-warning-text, #856404);
+            --ci-badge-error-bg: var(--color-error-bg, #f8d7da);
+            --ci-badge-error-text: var(--color-error-text, #721c24);
+            --ci-error-bg: var(--color-error-bg, #f8d7da);
+            --ci-error-text: var(--color-error-text, #721c24);
+            --ci-btn-bg: var(--color-primary, #3498db);
+            --ci-btn-hover: var(--color-primary-hover, #2980b9);
+            --ci-spinner-border: var(--color-border, #f3f3f3);
+            --ci-spinner-top: var(--color-primary, #3498db);
             --ci-shadow: rgba(0, 0, 0, 0.1);
+            color-scheme: light dark;
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --ci-bg: #1e1e1e;
-                --ci-text: #e0e0e0;
-                --ci-text-muted: #a0a0a0;
-                --ci-card-bg: #2d2d2d;
-                --ci-border: #404040;
-                --ci-hover-bg: #383838;
-                --ci-badge-success-bg: #1a3a2a;
-                --ci-badge-success-text: #4ade80;
-                --ci-badge-warning-bg: #3a3010;
-                --ci-badge-warning-text: #fbbf24;
-                --ci-badge-error-bg: #3a1a1a;
-                --ci-badge-error-text: #f87171;
-                --ci-error-bg: #3a1a1a;
-                --ci-error-text: #f87171;
-                --ci-btn-bg: #2563eb;
-                --ci-btn-hover: #1d4ed8;
-                --ci-spinner-border: #404040;
-                --ci-spinner-top: #60a5fa;
-                --ci-shadow: rgba(0, 0, 0, 0.3);
-            }
-        }
-
+        html,
         body {
             margin: 0;
             padding: 20px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--ci-bg);
             color: var(--ci-text);
+            color-scheme: light dark;
         }
         
         .header {
