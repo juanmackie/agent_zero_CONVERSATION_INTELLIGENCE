@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional
 _CONTEXT_GRAPH_KEY = "conversation_context_graph"
 _THREAD_INDEX_KEY = "conversation_thread_index"
 _LAST_PROCESSED_KEY = "conversation_intelligence_last_processed_timestamp"
+_ANALYSIS_STATUS_KEY = "conversation_intelligence_analysis_status"
 
 
 class ContextStore:
@@ -166,3 +167,38 @@ class ContextStore:
     def get_last_processed_timestamp() -> Optional[float]:
         """Get timestamp of last successful processing run."""
         return kvp.get_persistent(_LAST_PROCESSED_KEY, default=None)
+
+    @staticmethod
+    def save_analysis_status(status: Dict[str, Any]) -> bool:
+        """Persist the current analysis status for the modal."""
+        try:
+            kvp.set_persistent(_ANALYSIS_STATUS_KEY, status)
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def get_analysis_status() -> Dict[str, Any]:
+        """Load the current analysis status for the modal."""
+        return kvp.get_persistent(
+            _ANALYSIS_STATUS_KEY,
+            default={
+                "state": "idle",
+                "mode": None,
+                "message": "Idle",
+                "processed_count": 0,
+                "total_count": 0,
+                "started_at": None,
+                "finished_at": None,
+                "last_error": None,
+            },
+        )
+
+    @staticmethod
+    def clear_analysis_status() -> bool:
+        """Remove the persisted analysis status."""
+        try:
+            kvp.remove_persistent(_ANALYSIS_STATUS_KEY)
+            return True
+        except Exception:
+            return False

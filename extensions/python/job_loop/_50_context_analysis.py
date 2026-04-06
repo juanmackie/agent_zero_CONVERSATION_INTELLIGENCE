@@ -13,7 +13,6 @@ from pathlib import Path
 
 from helpers import kvp
 from helpers.extension import Extension
-from helpers.task_scheduler import TaskScheduler, TaskType
 from plugins._memory.helpers.memory import Memory
 
 
@@ -44,7 +43,37 @@ class ContextAnalysisJob(Extension):
     RUN_TIMEOUT = 300
 
     FIRST_RUN_KEY = "conversation_intelligence_first_run_complete"
-    
+
+    @staticmethod
+    def _now_iso() -> str:
+        return datetime.now().isoformat(timespec="seconds")
+
+    def _write_status(
+        self,
+        ContextStore,
+        *,
+        state: str,
+        mode: str | None = None,
+        message: str = "",
+        processed_count: int = 0,
+        total_count: int = 0,
+        started_at: str | None = None,
+        finished_at: str | None = None,
+        last_error: str | None = None,
+    ):
+        ContextStore.save_analysis_status(
+            {
+                "state": state,
+                "mode": mode,
+                "message": message,
+                "processed_count": processed_count,
+                "total_count": total_count,
+                "started_at": started_at,
+                "finished_at": finished_at,
+                "last_error": last_error,
+            }
+        )
+
     async def execute(self, **kwargs):
         """
         Called every 60 seconds by job_loop.
@@ -76,29 +105,79 @@ class ContextAnalysisJob(Extension):
         
         # Run analysis
         self.is_running = True
+        started_at = self._now_iso()
+        mode = "incremental" if first_run_complete else "full_scan"
+        self._write_status(
+            ContextStore,
+            state="running",
+            mode=mode,
+            message="Fetching conversations...",
+            processed_count=0,
+            total_count=0,
+            started_at=started_at,
+            finished_at=None,
+            last_error=None,
+        )
         try:
-            await asyncio.wait_for(
-                self._run_analysis(full_scan=not first_run_complete),
-                timeout=self.RUN_TIMEOUT
+            result = await asyncio.wait_for(
+                self._run_analysis(
+                    full_scan=not first_run_complete,
+                    ContextStore=ContextStore,
+                    started_at=started_at,
+                ),
+                timeout=self.RUN_TIMEOUT,
             )
+            result = result or {}
             self.last_run_time = current_time
             ContextStore.save_last_processed_timestamp(current_time)
+            self._write_status(
+                ContextStore,
+                state="success",
+                mode=mode,
+                message=result.get("message", "Analysis complete"),
+                processed_count=result.get("processed_count", 0),
+                total_count=result.get("total_count", 0),
+                started_at=started_at,
+                finished_at=self._now_iso(),
+                last_error=None,
+            )
         except asyncio.TimeoutError:
+            self._write_status(
+                ContextStore,
+                state="timeout",
+                mode=mode,
+                message="Analysis timed out",
+                processed_count=0,
+                total_count=0,
+                started_at=started_at,
+                finished_at=self._now_iso(),
+                last_error="Analysis timed out",
+            )
             print("Context analysis timed out, will retry next hour")
         except Exception as e:
+            self._write_status(
+                ContextStore,
+                state="error",
+                mode=mode,
+                message="Analysis failed",
+                processed_count=0,
+                total_count=0,
+                started_at=started_at,
+                finished_at=self._now_iso(),
+                last_error=str(e),
+            )
             print(f"Context analysis error: {e}")
         finally:
             self.is_running = False
     
-    async def _run_analysis(self, full_scan: bool = False):
+    async def _run_analysis(self, full_scan: bool = False, ContextStore=None, started_at: str | None = None):
         """
         Main analysis routine - fetches new conversations and extracts context.
         """
         if not self.agent:
-            return
+            return {"processed_count": 0, "total_count": 0, "message": "No agent available"}
 
         ContextExtractor = _load_helper_module("context_extractor").ContextExtractor
-        ContextStore = _load_helper_module("context_store").ContextStore
         fetch_memory_documents = _load_helper_module("memory_documents").fetch_memory_documents
         ThreadDetector = _load_helper_module("thread_detector").ThreadDetector
         
@@ -108,8 +187,8 @@ class ContextAnalysisJob(Extension):
         # Get memory instance
         try:
             db = await Memory.get(self.agent)
-        except Exception:
-            return
+        except Exception as e:
+            return {"processed_count": 0, "total_count": 0, "message": f"Memory unavailable: {e}"}
         
         # Fetch conversations since last processed time
         if full_scan:
@@ -134,25 +213,56 @@ class ContextAnalysisJob(Extension):
                 limit=self.MAX_BATCH_SIZE,
                 since=cutoff,
             )
+
+        total_count = len(all_docs)
+        mode = "full_scan" if full_scan else "incremental"
+        self._write_status(
+            ContextStore,
+            state="running",
+            mode=mode,
+            message=f"Analyzing {total_count} conversations...",
+            processed_count=0,
+            total_count=total_count,
+            started_at=started_at,
+            finished_at=None,
+            last_error=None,
+        )
         
         if not all_docs:
             if full_scan:
                 kvp.set_persistent(self.FIRST_RUN_KEY, True)
-            return
+            return {"processed_count": 0, "total_count": 0, "message": "No conversations found"}
         
         # Extract context from new documents
         extractor = ContextExtractor()
         new_contexts = []
         
-        for doc in all_docs:
+        for index, doc in enumerate(all_docs, start=1):
             context = await extractor.extract_from_document(self.agent, doc)
             if context:
                 new_contexts.append(context)
+
+            if index == total_count or index % 10 == 0:
+                self._write_status(
+                    ContextStore,
+                    state="running",
+                    mode=mode,
+                    message=f"Analyzing conversations ({index}/{total_count})...",
+                    processed_count=index,
+                    total_count=total_count,
+                    started_at=started_at,
+                    finished_at=None,
+                    last_error=None,
+                )
         
         if not new_contexts:
             if full_scan:
                 kvp.set_persistent(self.FIRST_RUN_KEY, True)
-            return
+            return {
+                "processed_count": total_count,
+                "total_count": total_count,
+                "message": "No analyzable conversations found",
+            }
         
         # Load existing thread detector state
         graph = ContextStore.load_context_graph()
@@ -173,3 +283,8 @@ class ContextAnalysisJob(Extension):
             kvp.set_persistent(self.FIRST_RUN_KEY, True)
 
         print(f"Context analysis complete: processed {len(new_contexts)} conversations")
+        return {
+            "processed_count": total_count,
+            "total_count": total_count,
+            "message": f"Processed {len(new_contexts)} conversations",
+        }

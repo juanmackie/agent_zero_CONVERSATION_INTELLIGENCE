@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 from helpers.api import ApiHandler, Request, Response
 from helpers import kvp
+from helpers.context_store import ContextStore
 
 
 class StatusCheckHandler(ApiHandler):
@@ -59,6 +60,17 @@ class StatusCheckHandler(ApiHandler):
                 "last_analysis": None,
                 "conversations_processed": 0
             },
+            "analysis": {
+                "state": "idle",
+                "mode": None,
+                "message": "Idle",
+                "processed_count": 0,
+                "total_count": 0,
+                "progress_percent": 0,
+                "started_at": None,
+                "finished_at": None,
+                "last_error": None,
+            },
             "schedule": {
                 "type": "job_loop",
                 "interval": "Every hour",
@@ -73,7 +85,9 @@ class StatusCheckHandler(ApiHandler):
             required_files = [
                 f"{plugin_path}/plugin.yaml",
                 f"{plugin_path}/helpers/context_store.py",
-                f"{plugin_path}/helpers/context_extractor.py"
+                f"{plugin_path}/helpers/context_extractor.py",
+                f"{plugin_path}/helpers/memory_documents.py",
+                f"{plugin_path}/extensions/python/job_loop/_50_context_analysis.py",
             ]
             
             status["installed"] = all(os.path.exists(f) for f in required_files)
@@ -85,7 +99,18 @@ class StatusCheckHandler(ApiHandler):
             # Check KVP data
             first_run = kvp.get_persistent("conversation_intelligence_first_run_complete", default=False)
             status["first_run_complete"] = first_run
+
+            analysis = ContextStore.get_analysis_status()
+            total_count = analysis.get("total_count", 0) or 0
+            processed_count = analysis.get("processed_count", 0) or 0
+            progress_percent = 0
+            if total_count > 0:
+                progress_percent = min(100, round((processed_count / total_count) * 100))
+
+            analysis["progress_percent"] = progress_percent
+            status["analysis"] = analysis
             
+            now = datetime.now()
             last_processed = kvp.get_persistent("conversation_intelligence_last_processed_timestamp", default=None)
             if last_processed:
                 dt = datetime.fromtimestamp(last_processed)
@@ -142,7 +167,6 @@ class StatusCheckHandler(ApiHandler):
             # Check recent activity
             if last_processed:
                 last_dt = datetime.fromtimestamp(last_processed)
-                now = datetime.now()
                 diff_hours = (now - last_dt).total_seconds() / 3600
                 
                 if diff_hours < 1:
@@ -151,9 +175,13 @@ class StatusCheckHandler(ApiHandler):
                     status["recent_activity"]["last_analysis"] = f"{int(diff_hours)} hours ago"
                 else:
                     status["recent_activity"]["last_analysis"] = f"{int(diff_hours / 24)} days ago"
-                
+
                 if diff_hours > 2:
                     status["schedule"]["status"] = "inactive"
+
+            if analysis.get("state") == "running":
+                status["recent_activity"]["last_analysis"] = analysis.get("message", "Running")
+                status["schedule"]["status"] = "active"
                 
                 # Estimate conversations processed in last run (this is approximate)
                 if context_graph:
