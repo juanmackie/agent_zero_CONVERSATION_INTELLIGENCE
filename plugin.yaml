@@ -17,6 +17,7 @@ helpers:
   - helpers/context_extractor.py
   - helpers/context_store.py
   - helpers/thread_detector.py
+  - helpers/memory_documents.py
 
 tools:
   - tools/conversation_search.py
@@ -27,8 +28,8 @@ prompts:
 # Extensions (use Agent Zero's extension system)
 extensions:
   python:
-    monologue_start:
-      - extensions/python/monologue_start/_50_context_analysis.py
+    job_loop:
+      - extensions/python/job_loop/_50_context_analysis.py
     system_prompt:
       - extensions/python/system_prompt/_20_conversation_context.py
 

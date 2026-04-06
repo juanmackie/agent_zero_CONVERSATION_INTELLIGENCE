@@ -59,6 +59,11 @@ class StatusCheckHandler(ApiHandler):
                 "last_analysis": None,
                 "conversations_processed": 0
             },
+            "schedule": {
+                "type": "job_loop",
+                "interval": "Every hour",
+                "status": "active"
+            },
             "error": None
         }
         
@@ -146,6 +151,9 @@ class StatusCheckHandler(ApiHandler):
                     status["recent_activity"]["last_analysis"] = f"{int(diff_hours)} hours ago"
                 else:
                     status["recent_activity"]["last_analysis"] = f"{int(diff_hours / 24)} days ago"
+                
+                if diff_hours > 2:
+                    status["schedule"]["status"] = "inactive"
                 
                 # Estimate conversations processed in last run (this is approximate)
                 if context_graph:
