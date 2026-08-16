@@ -72,7 +72,7 @@ async def fetch_memory_documents(db: Any, limit: int, since: str | None = None) 
         )
         return docs[:limit] if limit > 0 else docs
 
-    filter_expr = f"timestamp >= '{since}'" if since else ""
+    filter_expr = f"timestamp >= {repr(since)}" if since else ""
     return await db.search_similarity_threshold(
         query="",
         limit=limit,

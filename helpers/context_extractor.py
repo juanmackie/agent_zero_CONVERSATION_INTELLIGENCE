@@ -6,21 +6,9 @@ Zero custom LLM clients, zero new dependencies.
 import json
 from typing import Dict, Any, Optional
 
-
-def _normalize_document(doc: Any) -> tuple[str, Dict[str, Any]]:
-    if hasattr(doc, "page_content"):
-        content = getattr(doc, "page_content", "") or ""
-        metadata = getattr(doc, "metadata", {}) or {}
-        return content, metadata
-
-    if isinstance(doc, dict):
-        metadata = doc.get("metadata") or {}
-        content = doc.get("content")
-        if content is None:
-            content = doc.get("page_content", "")
-        return content or "", metadata
-
-    return "", {}
+from usr.plugins.conversation_intelligence.helpers.memory_documents import (
+    normalize_memory_document,
+)
 
 
 class ContextExtractor:
@@ -105,7 +93,7 @@ Conversation to analyze:
         if not doc:
             return None
 
-        content, metadata = _normalize_document(doc)
+        content, metadata = normalize_memory_document(doc)
         
         if not content:
             return None

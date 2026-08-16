@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 from helpers.api import ApiHandler, Request, Response
 from helpers import kvp
-from helpers.context_store import ContextStore
+from usr.plugins.conversation_intelligence.helpers.context_store import ContextStore
 
 
 class StatusCheckHandler(ApiHandler):

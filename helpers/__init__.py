@@ -1,16 +1,7 @@
 """
 Conversation Intelligence Helpers
+
+Submodules are imported directly via their fully qualified paths
+(usr.plugins.conversation_intelligence.helpers.<module>) to avoid
+side-effect loading of unrelated helpers.
 """
-
-from .context_extractor import ContextExtractor
-from .context_store import ContextStore
-from .thread_detector import ThreadDetector
-from .conversation_search import ConversationSearch, memory_load
-
-__all__ = [
-    'ContextExtractor',
-    'ContextStore', 
-    'ThreadDetector',
-    'ConversationSearch',
-    'memory_load'
-]

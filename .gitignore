@@ -7,6 +7,8 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+node_modules/
+.next/
 
 # IDE
 .vscode/
@@ -18,6 +20,15 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Never commit (per production-ready vibe coding rules)
+plan.md
+.pi-subagents/
+.env
+.env.*
+.claude/
+production-ready-vibe-coding-rules*
+*.local.md
 
 # Agent Zero runtime (not part of plugin)
 agent-zero-repo/

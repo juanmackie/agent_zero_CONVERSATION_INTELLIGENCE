@@ -3,9 +3,7 @@ Conversation Search Helper - Date-range and thread-based memory filtering
 Extends Agent Zero memory with conversation grouping capabilities.
 """
 
-from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
-import os
 
 # Agent Zero imports (existing infrastructure)
 try:
@@ -48,15 +46,15 @@ class ConversationSearch:
         if base_filter and base_filter.strip():
             conditions.append(f"({base_filter})")
         
-        # Add date range conditions
+        # Add date range conditions (repr() prevents simple_eval expression injection)
         if date_from:
-            conditions.append(f"timestamp >= '{date_from} 00:00:00'")
+            conditions.append(f"timestamp >= {repr(date_from + ' 00:00:00')}")
         if date_to:
-            conditions.append(f"timestamp <= '{date_to} 23:59:59'")
-        
-        # Add thread filter
+            conditions.append(f"timestamp <= {repr(date_to + ' 23:59:59')}")
+
+        # Add thread filter (repr() prevents simple_eval expression injection)
         if thread_id:
-            conditions.append(f"thread_id == '{thread_id}'")
+            conditions.append(f"thread_id == {repr(thread_id)}")
         
         # Join with AND
         return " and ".join(conditions) if conditions else ""
