@@ -550,7 +550,6 @@ def context_relevance(corpus, seed=7):
 
     RECENT_THREADS = ("ml-experiments", "security-audit", "travel-booking")
     STALE_THREADS = ("kubernetes-rollout", "budget-planning")
-    EXPECTED_KEYWORDS = ["gpu", "cve", "flight"]
 
     def docs_of(key):
         return sorted(
@@ -610,8 +609,46 @@ def context_relevance(corpus, seed=7):
     r = sum(recalls) / len(recalls)
     purity = (2 * p * r / (p + r)) if (p + r) else 0.0
 
-    # Injected-context keyword coverage via ContextStore + fake kvp
-    graph = {
+    # Injected-context keyword coverage via ContextStore + fake kvp.
+    # Coverage is measured over the NON-finance threads (the finance threads
+    # exist to exercise the grouping/over-merge path). Expected threads are
+    # derived data-driven: the 3 non-finance gold threads with the freshest
+    # last activity MUST be the ones surfaced in the injected context.
+    from helpers import memory_documents as _md
+
+    det_golds = {}
+    for did in gold_of:
+        det_golds.setdefault(det_of[did], set()).add(gold_of[did])
+
+    all_threads = detector.get_all_threads()
+    nonfinance_threads = {
+        tid: td
+        for tid, td in all_threads.items()
+        if det_golds.get(tid)
+        and all(g not in FINANCE_THREADS for g in det_golds[tid])
+    }
+
+    freshness = {}
+    for gold in THREADS:
+        if gold in FINANCE_THREADS:
+            continue
+        docs = docs_of(gold)
+        ts = [
+            _md.parse_memory_timestamp(d["metadata"]["timestamp"])
+            for d in docs
+        ]
+        ts = [t for t in ts if t is not None]
+        freshness[gold] = max(ts) if ts else None
+    expected_threads = sorted(
+        (g for g in freshness if freshness[g] is not None),
+        key=lambda g: freshness[g],
+        reverse=True,
+    )[:3]
+    expected_keywords = {
+        kw for g in expected_threads for kw in THREADS[g]
+    }
+
+    cov_graph = {
         "contexts": [],
         "threads": {
             tid: {
@@ -621,16 +658,16 @@ def context_relevance(corpus, seed=7):
                 "entities": td["entities"],
                 "topics": td["topics"],
             }
-            for tid, td in detector.get_all_threads().items()
+            for tid, td in nonfinance_threads.items()
         },
     }
-    ContextStore.save_context_graph(graph)
+    ContextStore.save_context_graph(cov_graph)
     top = ContextStore.get_top_threads(limit=3)
     # Model the real system-prompt injection: thread summary lines include the
     # thread's entities and topics, not just its id/counters.
     enriched = []
     for t in top:
-        td = graph["threads"].get(t["thread_id"], {})
+        td = cov_graph["threads"].get(t["thread_id"], {})
         enriched.append(
             {
                 **t,
@@ -639,9 +676,12 @@ def context_relevance(corpus, seed=7):
             }
         )
     injected = json.dumps(enriched).lower()
-    coverage = sum(1 for t in EXPECTED_KEYWORDS if t in injected) / len(
-        EXPECTED_KEYWORDS
+    hit_threads = sum(
+        1
+        for g in expected_threads
+        if any(kw in injected for kw in THREADS[g])
     )
+    coverage = hit_threads / 3
 
     score = 0.7 * purity + 0.3 * coverage
     return score, {

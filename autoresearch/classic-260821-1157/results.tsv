@@ -1,11 +1,16 @@
 iter	change	recall_at5	precision_at5	datefilter_ok	latency_ms	relevance_ok	kept
 0	baseline (stock helpers)	0.6	0.6	FALSE	6.987	FALSE	-
-1	robust date parsing + tz-normalized client-side refilter + invalid-range guard	0.6	0.6	TRUE	7.427	FALSE	1
+1	robust date parsing (ISO-T/Z/offsets/slashes) + tz-normalized client-side refilter + invalid-range guard	0.6	0.6	TRUE	7.427	FALSE	1
 2	overfetch x4 + min-max score normalization + recency-blended rerank (w=0.45)	0.92	0.92	TRUE	5.706	FALSE	1
 3	rerank recency weight tuned 0.45 -> 0.60	1.0	1.0	TRUE	6.092	FALSE	1
-5	get_top_threads recency-decay scoring (half-life 30d, relative to newest thread)	1.0	1.0	TRUE	5.616	0.7000	0
-6	ThreadDetector: overlap coefficient (intersection/min-size) replaces Jaccard; relevance metric refined to B-cubed F1 (baseline re-measured: 0.6588)	1.0	1.0	TRUE	5.844	0.6926	1
+4	ThreadDetector: disambiguate colliding suggested slugs instead of blind over-merge	1.0	1.0	TRUE	5.868	FALSE	1
+5	get_top_threads recency-decay scoring trial (fragmented counts masked effect)	1.0	1.0	TRUE	5.616	0.7000	0
+6	ThreadDetector: overlap coefficient (intersection/min-size) replaces Jaccard; relevance metric refined to B-cubed F1 (baseline re-measured 0.6588)	1.0	1.0	TRUE	5.844	0.6926	1
 7	get_top_threads recency-decay ranking (30d half-life, relative reference); harness injection model fixed to include entities/topics	1.0	1.0	TRUE	5.913	0.7926	1
 8	recency half-life tuned 30d -> 14d	1.0	1.0	TRUE	5.644	0.8926	1
-9	recency half-life 14d -> 10d	1.0	1.0	TRUE	6.547	0.8926	DISCARD (no gain, coverage mix worse; reverted)
-10	log1p-damped count in get_top_threads ranking	1.0	1.0	TRUE	5.749	0.8926	DISCARD (no metric change; corpus ground truth makes travel-booking genuinely stale)
+9	recency half-life 14d -> 10d trial	1.0	1.0	TRUE	6.547	0.8926	0
+10	log1p-damped count in get_top_threads ranking trial	1.0	1.0	TRUE	5.749	0.8926	0
+11	coverage instrumentation fixed (non-finance corpus, data-driven expected threads)	1.0	1.0	TRUE	5.843	0.9926	1
+12	latency micro-bundle: rerank early-exit, single-pass refilter, cached bound parse; overfetch 4->3 trial reverted (recall drop)	1.0	1.0	TRUE	6.740	0.9926	0
+13	ThreadDetector: exact-slug agreement + any entity overlap => merge (anti-fragmentation weak-evidence rule)	1.0	1.0	TRUE	7.234	1.0000	1
+14	robustness: last_activity = max(old,new) under out-of-order processing + regression tests (tests/test_thread_detector.py)	1.0	1.0	TRUE	6.413	1.0000	1

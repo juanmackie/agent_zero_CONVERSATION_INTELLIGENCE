@@ -7,6 +7,11 @@ Zero new infrastructure - uses existing context data.
 from typing import Dict, List, Any, Set
 from datetime import datetime
 
+try:
+    from usr.plugins.conversation_intelligence.helpers import memory_documents
+except ImportError:  # pragma: no cover - direct-layout fallback
+    import memory_documents
+
 
 class ThreadDetector:
     """
@@ -104,9 +109,25 @@ class ThreadDetector:
             
             # Calculate total score
             score = overlap + (0.2 if temporal_match else 0) + name_match
-            
-            # Must have at least 60% entity overlap or temporal + name match
-            if overlap >= self.ENTITY_OVERLAP_THRESHOLD or (temporal_match and name_match > 0):
+
+            # Exact slug agreement is strong evidence from the utility model:
+            # if it assigned this conversation the same thread id that already
+            # exists, ANY non-zero entity overlap corroborates membership.
+            # Demanding the full threshold here fragments threads on docs
+            # whose entity sample happens to miss the thread's core.
+            exact_slug_match = (
+                bool(suggested_thread)
+                and thread_id
+                and suggested_thread.lower() == thread_id.lower()
+            )
+
+            # Must have at least 60% entity overlap, corroboration for an
+            # exact slug match, or temporal + name match
+            if (
+                overlap >= self.ENTITY_OVERLAP_THRESHOLD
+                or (exact_slug_match and overlap > 0)
+                or (temporal_match and name_match > 0)
+            ):
                 if score > best_score:
                     best_score = score
                     best_match = thread_id
@@ -153,8 +174,14 @@ class ThreadDetector:
             new_importance = context.get("importance", 0.5)
             thread["average_importance"] = (old_avg + new_importance) / 2
             
-            # Update last activity
-            thread["last_activity"] = context.get("timestamp", thread["last_activity"])
+            # Update last activity (keep the MOST RECENT: processing order
+            # must not corrupt the thread's recency signal)
+            new_ts = context.get("timestamp", "")
+            if new_ts:
+                old_dt = memory_documents.parse_memory_timestamp(thread["last_activity"])
+                new_dt = memory_documents.parse_memory_timestamp(new_ts)
+                if old_dt is None or (new_dt is not None and new_dt > old_dt):
+                    thread["last_activity"] = new_ts
             
             # Add document ID
             thread["document_ids"].append(context.get("document_id", ""))
