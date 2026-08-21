@@ -22,7 +22,7 @@ A lightweight plugin that extends Agent Zero's memory system with **proactive co
 ```bash
 # Clone into your Agent Zero plugins directory
 cd /path/to/agent-zero/usr/plugins
-git clone https://github.com/juanm/agent-zero-conversation-intelligence.git conversation_intelligence
+git clone https://github.com/juanmackie/agent_zero_CONVERSATION_INTELLIGENCE.git conversation_intelligence
 
 # Or install via Agent Zero's plugin installer
 # The plugin will automatically:
@@ -160,10 +160,16 @@ conversation_intelligence/
 ├── default_config.yaml              # Configuration
 ├── helpers/                         # Core logic
 │   ├── __init__.py
-│   ├── context_extractor.py        # Utility model extraction
+│   ├── context_extractor.py          # Utility model extraction
 │   ├── context_store.py              # kvp storage management
 │   ├── thread_detector.py            # Auto-grouping algorithm
+│   ├── memory_documents.py           # Memory document access
 │   └── conversation_search.py        # Search helper
+├── api/
+│   └── status_check.py               # Status API for web UI
+├── webui/
+│   └── config.html                   # Plugin status modal
+├── check_plugin_status.py            # CLI diagnostic tool
 ├── extensions/
 │   └── python/
 │       ├── job_loop/
@@ -180,30 +186,30 @@ conversation_intelligence/
 
 ## ⚙️ Configuration
 
-Optional settings in `default_config.yaml`:
+Settings in `default_config.yaml`:
 
 ```yaml
 conversation_intelligence:
+  # Enable conversation search enhancements
   enabled: true
-  
-  background_processing:
-    enabled: true              # Master switch for hourly analysis
-    interval_minutes: 60       # How often to run
-    max_batch_size: 50         # Conversations per run
-    timeout_seconds: 300       # Max runtime
-    
-  context_extraction:
-    extract_entities: true
-    extract_topics: true
-    max_entities_per_conv: 10
-    
-  connection_building:
-    entity_overlap_threshold: 0.6  # 60% = thread match
-    temporal_window_hours: 24      # Time proximity
-    
-  proactive_behavior:
-    startup_context_count: 3   # Threads to inject
+
+  # Date format for filtering (YYYY-MM-DD)
+  date_format: "%Y-%m-%d"
+
+  # Default threshold for semantic similarity (0.0 - 1.0)
+  default_threshold: 0.7
+
+  # Default result limit
+  default_limit: 10
+
+  # Thread ID field name in metadata
+  thread_id_field: "thread_id"
+
+  # Auto-detect and use existing memory system (no duplication)
+  auto_detect_memory: true
 ```
+
+Other behaviors (hourly interval, batch size, run timeout, thread-detection thresholds) are defined as constants in the plugin's extension and helper modules.
 
 ## 🧪 Examples
 
@@ -248,4 +254,8 @@ from datetime import datetime, timedelta
 yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
 conversation_search(
-    quer
+    query="yesterday's notes",
+    date_from=yesterday,
+    date_to=yesterday
+)
+```
