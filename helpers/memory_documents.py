@@ -2,11 +2,19 @@
 Memory document helpers for conversation intelligence analysis.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Any
 
 
 TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+_DATETIME_FORMATS = (
+    TIMESTAMP_FORMAT,
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y/%m/%d %H:%M:%S",
+    "%Y/%m/%dT%H:%M:%S",
+)
 
 
 def normalize_memory_document(doc: Any) -> tuple[str, dict[str, Any]]:
@@ -26,14 +34,30 @@ def normalize_memory_document(doc: Any) -> tuple[str, dict[str, Any]]:
     return "", {}
 
 
+@lru_cache(maxsize=1024)
 def parse_memory_timestamp(timestamp: Any) -> datetime | None:
     if not isinstance(timestamp, str) or not timestamp:
         return None
 
+    s = timestamp.strip()
+    if s.endswith("Z") or s.endswith("z"):
+        s = s[:-1] + "+00:00"
+
+    # ISO-8601 first (handles T separator and timezone offsets)
     try:
-        return datetime.strptime(timestamp, TIMESTAMP_FORMAT)
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
     except ValueError:
-        return None
+        pass
+
+    for fmt in _DATETIME_FORMATS:
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            continue
+    return None
 
 
 def get_memory_timestamp(doc: Any) -> datetime | None:

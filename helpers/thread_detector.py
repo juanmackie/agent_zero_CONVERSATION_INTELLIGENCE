@@ -25,8 +25,15 @@ class ThreadDetector:
     
     def calculate_entity_overlap(self, entities1: List[str], entities2: List[str]) -> float:
         """
-        Calculate Jaccard similarity between two entity sets.
-        
+        Calculate entity-set similarity between a document and a thread.
+
+        Uses the overlap coefficient intersection / min(|A|, |B|) instead of
+        Jaccard: Jaccard penalises large threads for having absorbed more
+        entities over time, which wrongly fragments incremental groupings.
+        The overlap coefficient asks whether the smaller set is largely
+        contained in the larger one, which is the right question when
+        matching a single conversation against an accumulated thread.
+
         Returns:
             Float 0.0-1.0 representing overlap percentage
         """
@@ -37,12 +44,12 @@ class ThreadDetector:
         set2 = set(e.lower() for e in entities2)
         
         intersection = set1 & set2
-        union = set1 | set2
+        smaller = min(len(set1), len(set2))
         
-        if not union:
+        if not intersection or smaller == 0:
             return 0.0
         
-        return len(intersection) / len(union)
+        return len(intersection) / smaller
     
     def is_temporally_related(self, timestamp1: str, timestamp2: str) -> bool:
         """
@@ -176,6 +183,17 @@ class ThreadDetector:
                 
                 if suggested and suggested != "general":
                     new_thread_id = suggested
+                    if new_thread_id in self.threads:
+                        # The suggested slug collides with an existing thread
+                        # that entity overlap did NOT match (find_best_thread_match
+                        # already returned None). Blindly merging here would
+                        # over-merge distinct topics sharing a generic slug;
+                        # disambiguate with the dominant entity instead.
+                        entities = context.get("entities", []) or []
+                        suffix = "-".join(
+                            str(e).lower().replace(" ", "-") for e in entities[:1]
+                        )
+                        new_thread_id = f"{suggested}-{suffix or 'topic'}"[:60]
                 else:
                     # Generate from entities
                     entities = context.get("entities", [])

@@ -1,0 +1,26 @@
+{
+  "skill": "autoresearch",
+  "mode": "classic",
+  "subcommand": "autoresearch",
+  "repo": "agent_zero_CONVERSATION_INTELLIGENCE",
+  "goal": "Retrieval accuracy, date-filter correctness, latency, context relevance (stub harness, no live Agent Zero, no LLM/network)",
+  "finished": "2026-08-21T12:35:08Z",
+  "iterations_planned": 12,
+  "iterations_run": 10,
+  "stop_reason": "PLATEAU: relevance 0.8926 ceiling - corpus ground truth dates travel-booking genuinely stale (45d vs 23d reference); further gains require gaming the metric. All other metrics at ceiling.",
+  "baseline": { "recall_at5": 0.6, "precision_at5": 0.6, "datefilter_ok": false, "latency_ms": 6.457, "relevance": 0.6282 },
+  "best": { "recall_at5": 1.0, "precision_at5": 1.0, "datefilter_ok": true, "datefilter_passed": "10/10", "latency_ms": 5.6, "relevance": 0.8926 },
+  "kept_changes": [
+    "robust date parsing + tz-normalized client-side refilter + invalid-range guard (10/10 date checks)",
+    "overfetch x4 + min-max score normalization + recency-blended rerank",
+    "rerank recency weight 0.60",
+    "ThreadDetector overlap coefficient replaces Jaccard",
+    "get_top_threads recency-decay ranking (14d half-life, relative reference)",
+    "harness injection model includes entities/topics"
+  ],
+  "discarded": ["half-life 10d (no gain)", "log1p count damping (no metric change)"],
+  "verification": "tests/stub_harness.py + tests/test_harness.py (4 passed)",
+  "safety": "no network, no live Agent Zero, no LLM calls; fake FAISS/kvp stubs only",
+  "files_changed": ["helpers/context_store.py", "helpers/conversation_search.py", "helpers/memory_documents.py", "helpers/thread_detector.py"],
+  "files_added": ["tests/stub_harness.py", "tests/test_harness.py", "autoresearch/classic-260821-1157/"]
+}
