@@ -6,6 +6,11 @@ Zero new databases, zero new storage systems.
 from helpers import kvp
 from typing import Dict, Any, Optional
 
+try:
+    from usr.plugins.conversation_intelligence.helpers import memory_documents
+except ImportError:  # pragma: no cover - direct-layout fallback
+    import memory_documents
+
 # kvp keys
 _CONTEXT_GRAPH_KEY = "conversation_context_graph"
 _THREAD_INDEX_KEY = "conversation_thread_index"
@@ -119,39 +124,69 @@ class ContextStore:
         
         return recent
     
+    # Half-life (days) for recency decay in thread ranking
+    THREAD_RECENCY_HALF_LIFE_DAYS = 14.0
+
     @staticmethod
     def get_top_threads(limit: int = 3) -> list:
         """
         Get top N most active/important threads.
-        
+
+        Ranking blends importance, activity volume and recency: threads are
+        decayed with a 30-day half-life measured RELATIVE to the most recently
+        active thread, so freshly-active conversations surface even when a
+        long-running stale thread has accumulated more entries. Wall-clock
+        independent (uses the newest thread activity as reference).
+
         Args:
             limit: Number of threads to return
-            
+
         Returns:
             List of thread info dicts with last activity and importance
         """
         graph = ContextStore.load_context_graph()
         threads = graph.get("threads", {})
-        
+
         if not threads:
             return []
-        
-        # Sort by importance and recency
+
+        reference_time = None
+        parsed = {}
+        for thread_id, thread_data in threads.items():
+            last_activity = thread_data.get("last_activity", "")
+            dt = (
+                memory_documents.parse_memory_timestamp(last_activity)
+                if last_activity
+                else None
+            )
+            parsed[thread_id] = dt
+            if dt is not None and (reference_time is None or dt > reference_time):
+                reference_time = dt
+
+        half_life = ContextStore.THREAD_RECENCY_HALF_LIFE_DAYS
+
         thread_list = []
         for thread_id, thread_data in threads.items():
+            dt = parsed[thread_id]
+            if dt is not None and reference_time is not None:
+                age_days = max(0.0, (reference_time - dt).total_seconds() / 86400.0)
+                decay = 0.5 ** (age_days / half_life)
+            else:
+                decay = 0.5 ** (365.0 / half_life)  # unknown recency: conservative
             thread_list.append({
                 "thread_id": thread_id,
                 "last_activity": thread_data.get("last_activity", ""),
                 "conversation_count": thread_data.get("conversation_count", 0),
-                "importance": thread_data.get("average_importance", 0.5)
+                "importance": thread_data.get("average_importance", 0.5),
+                "recency_decay": round(decay, 6),
             })
-        
-        # Sort by importance * conversation_count
+
+        # Sort by importance * conversation_count * recency decay
         thread_list.sort(
-            key=lambda x: x["importance"] * x["conversation_count"],
+            key=lambda x: x["importance"] * x["conversation_count"] * x["recency_decay"],
             reverse=True
         )
-        
+
         return thread_list[:limit]
     
     @staticmethod

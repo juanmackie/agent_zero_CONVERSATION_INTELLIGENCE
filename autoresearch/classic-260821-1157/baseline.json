@@ -1,0 +1,29 @@
+======================================================================
+stub_harness: agent_zero_CONVERSATION_INTELLIGENCE
+======================================================================
+{
+  "recall_at5": 0.6,
+  "precision_at5": 0.6,
+  "datefilter_passed": 6,
+  "datefilter_total": 10,
+  "datefilter_ok": false,
+  "latency_ms": 6.457,
+  "relevance": 0.6282,
+  "relevance_ok": false,
+  "relevance_details": {
+    "purity": 0.8974358974358975,
+    "keyword_coverage": 0.0,
+    "top_threads": [
+      "payments",
+      "kubernetes-rollout",
+      "budget-planning"
+    ]
+  },
+  "failed_date_checks": [
+    "iso_T_timestamp_in_range",
+    "z_suffix_timestamp_in_range",
+    "tz_offset_converted_to_utc",
+    "slash_date_format_input"
+  ],
+  "total_docs": 251
+}
